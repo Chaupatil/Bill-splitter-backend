@@ -24,6 +24,25 @@ const expenseGroupSchema = new mongoose.Schema({
     type: String,
     required: [true, "Please add a group name"],
   },
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  members: [
+    {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      email: String,
+      status: {
+        type: String,
+        enum: ["PENDING", "ACCEPTED"],
+        default: "PENDING",
+      },
+    },
+  ],
   friends: [
     {
       type: String,

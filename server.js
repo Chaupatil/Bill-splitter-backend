@@ -17,6 +17,8 @@ app.use(express.urlencoded({ extended: false }));
 // Routes
 app.use("/api/expense-groups", require("./routes/expenseGroupRoutes"));
 
+app.use("/api/users", require("./routes/userRoutes"));
+
 // Error handler
 app.use(errorHandler);
 

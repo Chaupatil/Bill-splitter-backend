@@ -6,7 +6,19 @@ const calculateSettlements = require("../utils/calculateSettlements");
 // @route   GET /api/expense-groups
 // @access  Public
 const getExpenseGroups = asyncHandler(async (req, res) => {
-  const expenseGroups = await ExpenseGroup.find().sort({ createdAt: -1 });
+  // Check if user is authenticated
+  if (!req.user || !req.user._id) {
+    res.status(400);
+    throw new Error("User not authenticated");
+  }
+
+  const expenseGroups = await ExpenseGroup.find({
+    $or: [
+      { owner: req.user._id },
+      { "members.user": req.user._id, "members.status": "ACCEPTED" },
+    ],
+  }).sort({ createdAt: -1 });
+
   res.status(200).json(expenseGroups);
 });
 
@@ -16,15 +28,24 @@ const getExpenseGroups = asyncHandler(async (req, res) => {
 const createExpenseGroup = asyncHandler(async (req, res) => {
   const { name, friends, expenses } = req.body;
 
+  // Ensure the user is authenticated and the user._id is available
+  if (!req.user || !req.user._id) {
+    res.status(400);
+    throw new Error("User not authenticated");
+  }
+
+  // Validation check for name and friends
   if (!name || !friends || friends.length === 0) {
     res.status(400);
     throw new Error("Please provide name and at least one friend");
   }
 
+  // Create the expense group, setting the owner as the authenticated user
   const expenseGroup = await ExpenseGroup.create({
     name,
     friends,
     expenses: expenses || [],
+    owner: req.user._id, // Set the owner as the authenticated user
   });
 
   res.status(201).json(expenseGroup);
