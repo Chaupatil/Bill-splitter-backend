@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
+const { Schema } = mongoose; // Add this line to define Schema
 
-const expenseSchema = new mongoose.Schema({
+const expenseSchema = new Schema({
   description: {
     type: String,
     required: [true, "Please add a description"],
@@ -17,9 +18,25 @@ const expenseSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  splitType: {
+    type: String,
+    enum: ["equal", "exact", "percentage", "adjust"],
+    default: "equal",
+  },
+  splitDetails: {
+    type: Map,
+    of: new Schema(
+      {
+        amount: Number,
+        percentage: Number,
+        adjustment: Number,
+      },
+      { _id: false }
+    ),
+  },
 });
 
-const expenseGroupSchema = new mongoose.Schema({
+const expenseGroupSchema = new Schema({
   name: {
     type: String,
     required: [true, "Please add a group name"],
