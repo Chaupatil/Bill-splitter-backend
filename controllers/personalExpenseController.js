@@ -230,7 +230,7 @@ exports.deletePersonalExpense = async (req, res) => {
       });
     }
 
-    await PersonalExpense.findByIdAndRemove(req.params.id);
+    await PersonalExpense.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
       success: true,
