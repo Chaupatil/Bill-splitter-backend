@@ -19,6 +19,8 @@ app.use("/api/expense-groups", require("./routes/expenseGroupRoutes"));
 
 app.use("/api/users", require("./routes/userRoutes"));
 
+app.use("/api/personal-expenses", require("./routes/personalExpenseRoutes"));
+
 // Error handler
 app.use(errorHandler);
 
