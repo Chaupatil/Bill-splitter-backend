@@ -290,10 +290,22 @@ exports.getExpenseStats = async (req, res) => {
         },
       },
       {
+        $addFields: {
+          // Convert to user's timezone (assuming IST UTC+5:30)
+          localDate: {
+            $dateFromParts: {
+              year: { $year: { date: "$date", timezone: "+05:30" } },
+              month: { $month: { date: "$date", timezone: "+05:30" } },
+              day: { $dayOfMonth: { date: "$date", timezone: "+05:30" } },
+            },
+          },
+        },
+      },
+      {
         $group: {
           _id: {
-            year: { $year: "$date" },
-            month: { $month: "$date" },
+            year: { $year: { date: "$localDate", timezone: "+05:30" } },
+            month: { $month: { date: "$localDate", timezone: "+05:30" } },
             type: "$type",
           },
           total: { $sum: "$amount" },

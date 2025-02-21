@@ -10,6 +10,8 @@ const generateToken = (id) => {
   return token;
 };
 
+// module.exports = { registerUser, loginUser };
+
 const registerUser = asyncHandler(async (req, res, next) => {
   const { name, email, password } = req.body;
 
@@ -62,4 +64,74 @@ const loginUser = asyncHandler(async (req, res, next) => {
   }
 });
 
-module.exports = { registerUser, loginUser };
+const updateProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id).select("+password");
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  const { name, email, currentPassword, newPassword, avatar } = req.body;
+
+  // If updating password, verify current password
+  if (newPassword) {
+    if (!currentPassword) {
+      res.status(400);
+      throw new Error("Please provide current password");
+    }
+
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      res.status(401);
+      throw new Error("Current password is incorrect");
+    }
+
+    user.password = newPassword;
+  }
+
+  // Update other fields if provided
+  if (name) user.name = name;
+  if (email) {
+    // Check if email is already taken by another user
+    const emailExists = await User.findOne({ email, _id: { $ne: user._id } });
+    if (emailExists) {
+      res.status(400);
+      throw new Error("Email already in use");
+    }
+    user.email = email;
+  }
+  if (avatar) user.avatar = avatar;
+
+  await user.save();
+
+  res.json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar,
+    token: generateToken(user._id),
+  });
+});
+
+const getProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  res.json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar,
+    createdAt: user.createdAt,
+  });
+});
+
+module.exports = {
+  registerUser,
+  loginUser,
+  updateProfile,
+  getProfile,
+};
