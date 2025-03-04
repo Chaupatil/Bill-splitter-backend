@@ -10,8 +10,6 @@ const generateToken = (id) => {
   return token;
 };
 
-// module.exports = { registerUser, loginUser };
-
 const registerUser = asyncHandler(async (req, res, next) => {
   const { name, email, password } = req.body;
 
