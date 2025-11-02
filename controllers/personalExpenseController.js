@@ -1,5 +1,6 @@
 const PersonalExpense = require("../models/PersonalExpense");
 const { validationResult } = require("express-validator");
+const { parseCSV, validateExpenseRow } = require("../utils/csvProcessor");
 
 // Get all personal expenses for a user
 exports.getPersonalExpenses = async (req, res) => {
@@ -350,5 +351,53 @@ exports.getExpenseStats = async (req, res) => {
       success: false,
       message: "Server error while fetching expense statistics",
     });
+  }
+};
+
+exports.uploadCSV = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No file uploaded" });
+    }
+
+    const rows = await parseCSV(req.file.buffer);
+    const validExpenses = [];
+    const errors = [];
+
+    rows.forEach((row, index) => {
+      const {
+        isValid,
+        errors: rowErrors,
+        ...expenseData
+      } = validateExpenseRow(row);
+      if (isValid) {
+        validExpenses.push({
+          user: req.user.id,
+          amount: expenseData.amount,
+          type: row.type.toLowerCase(),
+          category: row.category.trim(),
+          description: (row.description || "").trim(),
+          date: row.date ? new Date(row.date) : new Date(),
+        });
+      } else {
+        errors.push({ row: index + 2, errors: rowErrors }); // +2: header + 1-based
+      }
+    });
+
+    if (validExpenses.length > 0) {
+      await PersonalExpense.insertMany(validExpenses);
+    }
+
+    res.status(200).json({
+      success: true,
+      imported: validExpenses.length,
+      failed: errors.length,
+      errors: errors.length > 0 ? errors : undefined,
+    });
+  } catch (error) {
+    console.error("CSV upload error:", error);
+    res.status(500).json({ success: false, message: "Failed to process CSV" });
   }
 };

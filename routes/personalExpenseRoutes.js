@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { check } = require("express-validator");
 const { protect } = require("../middleware/auth");
+const upload = require("../middleware/upload");
 const personalExpenseController = require("../controllers/personalExpenseController");
 
 // @route   GET /api/personal-expenses
@@ -62,6 +63,16 @@ router.get(
   "/stats/summary",
   protect,
   personalExpenseController.getExpenseStats
+);
+
+// @route   POST /api/personal-expenses/upload-csv
+// @desc    Upload CSV and import personal expenses
+// @access  Private
+router.post(
+  "/upload-csv",
+  protect,
+  upload.single("file"),
+  personalExpenseController.uploadCSV
 );
 
 module.exports = router;
