@@ -29,6 +29,12 @@ router.post(
   personalExpenseController.addPersonalExpense
 );
 
+router.post(
+  "/bulk-add",
+  protect,
+  personalExpenseController.addMultipleExpenses
+);
+
 // @route   GET /api/personal-expenses/:id
 // @desc    Get a single personal expense
 // @access  Private
@@ -55,6 +61,12 @@ router.put(
 // @desc    Delete a personal expense
 // @access  Private
 router.delete("/:id", protect, personalExpenseController.deletePersonalExpense);
+
+router.post(
+  "/bulk-delete",
+  protect,
+  personalExpenseController.deleteMultipleExpenses
+);
 
 // @route   GET /api/personal-expenses/stats
 // @desc    Get expense statistics

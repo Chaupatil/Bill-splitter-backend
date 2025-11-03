@@ -121,6 +121,37 @@ exports.addPersonalExpense = async (req, res) => {
   }
 };
 
+exports.addMultipleExpenses = async (req, res) => {
+  try {
+    const { expenses } = req.body;
+    if (!Array.isArray(expenses) || expenses.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No expenses provided" });
+    }
+
+    const valid = expenses.map((e) => ({
+      user: req.user.id,
+      amount: e.amount,
+      type: e.type,
+      category: e.category,
+      description: e.description || "",
+      date: e.date ? new Date(e.date) : new Date(),
+    }));
+
+    await PersonalExpense.insertMany(valid);
+
+    res.status(201).json({
+      success: true,
+      count: valid.length,
+      message: `${valid.length} expenses added successfully`,
+    });
+  } catch (error) {
+    console.error("Error in bulk add:", error);
+    res.status(500).json({ success: false, message: "Failed to add expenses" });
+  }
+};
+
 // Get a single personal expense
 exports.getPersonalExpenseById = async (req, res) => {
   try {
@@ -242,6 +273,34 @@ exports.deletePersonalExpense = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Server error while deleting personal expense",
+    });
+  }
+};
+
+exports.deleteMultipleExpenses = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No expense IDs provided" });
+    }
+
+    const result = await PersonalExpense.deleteMany({
+      _id: { $in: ids },
+      user: req.user.id,
+    });
+
+    res.status(200).json({
+      success: true,
+      deletedCount: result.deletedCount,
+      message: `${result.deletedCount} expenses deleted successfully`,
+    });
+  } catch (error) {
+    console.error("Error in bulk delete:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete selected expenses",
     });
   }
 };
