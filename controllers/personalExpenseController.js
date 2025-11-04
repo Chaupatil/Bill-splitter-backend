@@ -1,6 +1,7 @@
 const PersonalExpense = require("../models/PersonalExpense");
 const { validationResult } = require("express-validator");
 const { parseCSV, validateExpenseRow } = require("../utils/csvProcessor");
+const XLSX = require("xlsx");
 
 // Get all personal expenses for a user
 exports.getPersonalExpenses = async (req, res) => {
@@ -421,7 +422,23 @@ exports.uploadCSV = async (req, res) => {
         .json({ success: false, message: "No file uploaded" });
     }
 
-    const rows = await parseCSV(req.file.buffer);
+    let rows = [];
+
+    if (
+      req.file.originalname.endsWith(".xlsx") ||
+      req.file.originalname.endsWith(".xls")
+    ) {
+      const wb = XLSX.read(req.file.buffer, { type: "buffer" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json(ws, {
+        defval: "",
+        raw: false, // <-- convert all cell values to text
+      });
+    } else {
+      rows = await parseCSV(req.file.buffer);
+    }
+
+    // Validation & insertion (same as before)
     const validExpenses = [];
     const errors = [];
 
@@ -441,11 +458,13 @@ exports.uploadCSV = async (req, res) => {
           date: row.date ? new Date(row.date) : new Date(),
         });
       } else {
-        errors.push({ row: index + 2, errors: rowErrors }); // +2: header + 1-based
+        errors.push({ row: index + 2, errors: rowErrors });
       }
     });
 
     if (validExpenses.length > 0) {
+      console.log("Sample parsed expenses:", validExpenses.slice(0, 3));
+
       await PersonalExpense.insertMany(validExpenses);
     }
 
@@ -457,6 +476,8 @@ exports.uploadCSV = async (req, res) => {
     });
   } catch (error) {
     console.error("CSV upload error:", error);
-    res.status(500).json({ success: false, message: "Failed to process CSV" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to process CSV/Excel" });
   }
 };
